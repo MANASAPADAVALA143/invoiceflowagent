@@ -4,13 +4,16 @@ Serves both use cases from one FastAPI server.
 
 USE CASE 1: Excel VBA calls /api/agent/process-invoice
 USE CASE 2: n8n calls /api/agent/process-email-invoice
+USE CASE 3: InvoiceFlow web app Scan invoice → POST /api/agent/extract-image (multipart file)
 
-Install: pip install fastapi uvicorn anthropic httpx gspread google-auth python-dotenv
+Install: pip install -r requirements.txt
 Run:     uvicorn agent:app --reload --port 8000
 """
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+
+from extract_image_routes import router as extract_image_router
 from pydantic import BaseModel
 from typing import Optional, List, Any
 import anthropic
@@ -33,6 +36,7 @@ app.add_middleware(
         "http://localhost:5173",
         "http://localhost:5176",
         "https://invoiceflow.vercel.app",
+        "https://apinvoiceflow.vercel.app",
         "https://invoiceflow.ai",
     ],
     allow_origin_regex=r"https://.*\.vercel\.app",
@@ -40,6 +44,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(extract_image_router, prefix="/api/agent", tags=["agent"])
 
 claude = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
@@ -860,6 +866,7 @@ def root():
             "/api/health",
             "/api/agent/process-invoice",
             "/api/agent/process-email-invoice",
+            "/api/agent/extract-image",
             "/api/setup/google-sheet",
         ],
     }
